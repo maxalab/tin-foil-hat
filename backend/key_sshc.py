@@ -1,6 +1,5 @@
 import paramiko
 import re
-
 MAX_IPTABLE_MARK = 0x7fff
 DEFAULT_MTU = 1500
 KERNEL_HZ = 100 #Default for tplink wrn
@@ -98,12 +97,12 @@ class TcManager(object):
         rules = [l for l in lines if "MARK" in l]
         return rules
 
-    def _get_aqe_rules(self):
-        rules = [l for l in self._get_all_rules() if "aqe" in l]
+    def _get_tfl_rules(self):
+        rules = [l for l in self._get_all_rules() if "tfh" in l]
         return rules
 
     def _get_mark_per_ip(self):
-        marks = [int(r.split(" ")[-1], 16) for r in self._get_aqe_rules()
+        marks = [int(r.split(" ")[-1], 16) for r in self._get_tfl_rules()
                  if self.ip in r]
         return marks
 
@@ -144,7 +143,7 @@ class TcManager(object):
         self.execute(cmd)
 
     def reset_iptable(self):
-        rules = self._get_aqe_rules()
+        rules = self._get_tfl_rules()
         rule_nums = [r.split(" ")[0] for r in rules]
         for n in sorted(rule_nums, reverse=1):
             cmd = "/usr/sbin/iptables -t mangle -D FORWARD {}".format(n)
@@ -190,7 +189,7 @@ class TcManager(object):
             opt = "-d"
         cmd = '/usr/sbin/iptables -t mangle -A FORWARD {opt} {ip} ' \
               '-i {iface} -j MARK --set-mark {mark} -m comment ' \
-              '--comment "aqe_{ip}"'.format(
+              '--comment "tfl_{ip}"'.format(
                   opt=opt, ip=self.ip, iface=iface['name'], mark=self.mark)
         self.history.append(cmd)
 
@@ -203,7 +202,7 @@ class TcManager(object):
             mark = self.mark
         cmd = '/usr/sbin/iptables -t mangle -D FORWARD {opt} {ip} ' \
               '-i {iface} -j MARK --set-mark {mark} -m comment ' \
-              '--comment "aqe_{ip}"'.format(
+              '--comment "tfl_{ip}"'.format(
                   opt=opt, ip=self.ip, iface=iface['name'], mark=mark)
         self.history.append(cmd)
 
@@ -385,7 +384,7 @@ if __name__ == '__main__':
     CONFIG = {
         'host': "192.168.12.1",
         'username': 'root',
-        'keyfile': "../../../aqe/aqe/aqe.key"
+        'keyfile': "../../../tfl/tfl/tfl.key"
     }
     with TcManager(CONFIG['host'],
                    CONFIG['username'],
